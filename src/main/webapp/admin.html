@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADMIN</title>
+    <link rel="stylesheet" href="css/admin.css">
+    <script type="text/javascript" src="./script/vue.global.js"></script>
+    <script type="text/javascript" src="./script/axios.js"></script>
+</head>
+
+<body>
+    <div id="main-content">
+        <div id="main-content-topbar">
+            <div id="exit" class="mc-topbar-btns"></div>
+            <div id="mini" class="mc-topbar-btns"></div>
+            <div id="max" class="mc-topbar-btns"></div>
+        </div>
+    <form>
+        <div id="mc-login">
+            <div id="mc-login-title">ADMIN</div>
+            <input type="text" name="mc-lg-account" class="login-block" id="login-account" placeholder="Enter your email address" v-model="account">
+            <input type="password" name="mc-lg-password" class="login-block" id="login-password" placeholder="Password" v-model="password">
+            <div id="login-btn" class="login-block" @click="Login()">登录</div>
+        </div>
+    </form>
+    </div>
+    <script type="module">
+        const adminapp =Vue.createApp({
+            data() {
+                return {
+                    account: "",
+                    password: ""
+                }
+            },
+            methods: {
+                Login() {
+
+                    console.log("[Post]:AdminLogin");
+                    let url = "AdminServlet"
+                    let parms = new URLSearchParams();
+                    parms.append("account", this.account);
+                    parms.append("password", this.password);
+
+                    axios.post(url, parms)
+                        .then(function (response) {
+                            let data = response.data;
+                            console.log(data);
+                            if(data.loginSucceeded)
+                            {
+
+                                alert("登陆成功,欢迎您管理员");
+                                let url = window.location.href;
+                                url = url.replace('admin.html','');
+                                url=url+data.redirectUrl;
+                                window.location.href = url;
+
+                            }else
+                            {
+                                alert("您不是管理员,登录失败"); 
+                            }
+
+                        }).catch(function (error) {
+                            console.log(error);
+                        }).then(function () {
+                        });
+
+                }
+            },
+            mounted()
+            {
+                console.log("Vue加载成功");
+            }
+
+        });
+        adminapp.mount("#main-content");
+
+    </script>
+
+</body>
+
+</html>

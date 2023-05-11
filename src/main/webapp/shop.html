@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>🍊书店</title>
+    <link rel="stylesheet" href="css/shop.css">
+    <script type="text/javascript" src="./script/vue.global.js"></script>
+    <script type="text/javascript" src="./script/axios.js"></script>
+</head>
+
+<body>
+<div id="bookshopapp">
+    <div id="top">
+        <div id="top-left">
+            <div id="top-left-logo">📖</div>
+            <div id="top-left-name">🍊书店</div>
+        </div>
+        <div id="top-right">
+            <div id="top-right-login">
+                👨‍💻
+            </div>
+        </div>
+    </div>
+    <div id="mid">
+        <div id="mid-left">
+            <div id="mid-left-categroy">
+                <ul>
+                    <li @click="GetAllBooks()">全部</li>
+                    <li v-for="category in bcategorys" @click="QueryACategoryBooks(category.bcno)">
+                        {{category.categoryName}}
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div id="mid-right">
+            <div id="mid-right-content">
+                <ul>
+                    <li v-for="bookUnit in bookUnits">
+                        <div id="book-unit">
+                            <div id="book-unit-img">
+                                <img v-bind:src="bookUnit.burl" alt="fengmian">
+                            </div>
+                            <div id="book-unit-info">
+                                <span style="font-weight: bolder;">{{bookUnit.bname}}</span>
+                                <span>作者:{{bookUnit.bauthor}}</span>
+                                <span>出版日期:{{bookUnit.bpubdate}}</span>
+                            </div>
+                            <div id="book-unit-text">
+                                <div id="book-unit-text-content"><b>简介:</b>{{bookUnit.binfo}}</div>
+                            </div>
+                            <div id="book-unit-btn" @click="PutCart(bookUnit.bno)">
+                                加<br>购<br>物<br>车
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div id="cart">
+        <div id="cart-content" v-if="cartVisable">
+            <div id="cart-content-bar">
+                <span>购物车</span>
+                <span>共计:</span>
+                <span>{{totalOrderPrice}}元</span>
+                <div @click="CloseCart()"></div>
+            </div>
+            <ul id="cart-content-ul">
+                <li v-for="cartUnit in cartUnits">
+                    <div id="cart-data-unit">
+                        <span style="width: 40%;">{{cartUnit.bname}}</span>
+                        <span style="width: 33%;">{{cartUnit.bauthor}}</span>
+                        <span style="width: 10%;">{{cartUnit.bprice}}</span>
+                        <div id="cart-data-unit-del" @click="DelCartItem(cartUnit.bno)">
+                            删除
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div id="service-content">
+        <button id="buy-button" @click="Buy()" v-show="buyBtnVisable">Buy</button>
+        <button id="cart-button" @click="OpenCart()">+</button>
+    </div>
+    <div id="notice" v-if="noticeVisable">
+        <div id="notice-top">
+            <h1>📃公告</h1>
+            <div id="notice-close-btn" @click="CloseNotice()">
+            </div>
+        </div>
+        <div id="notice-info">
+            <h1>{{noticeUnit.noticeTitle}}</h1>
+            <h3>日期:{{noticeUnit.noticeDate}}</h3>
+        </div>
+        <div id="notice-content">
+            {{noticeUnit.noticeContent}}
+        </div>
+    </div>
+</div>
+<script>
+    const bookshopapp = Vue.createApp({
+        data() {
+            return {
+                bcategorys:[""],
+                bookUnits:[""],
+                cartUnits:[""],
+                cartVisable:false,
+                buyBtnVisable:false,
+                noticeUnit:{},
+                noticeVisable:true,
+                totalOrderPrice:0
+            }
+        },
+        mounted()
+        {
+            //请求shop页数据===============================
+            axios({
+                url:"BookShopServlet"
+            })
+                .then((result) => {
+                    let data = result.data;
+                    this.bcategorys = data.bookCategoryList;
+                    this.bookUnits = data.bookUnitList;
+                    this.cartUnits = data.cartUnitList;
+                    QueryNotice();
+
+                }).catch((err) => {
+                console.log("初始化出错了");
+                console.log(err);
+            });
+            let thisObj = this;
+            function QueryNotice()
+            {
+                //请求公告===========================
+                axios({
+                    url:"RandomNoticeServlet"
+                })
+                    .then((result) => {
+                        let data = result.data;
+                        console.log(data);
+                        thisObj.noticeUnit = data;
+
+                    }).catch((err) => {
+                    console.log("出错了");
+                    console.log(err);
+                });
+            }
+            this.OpenCart();
+
+        },
+        methods: {
+            QueryACategoryBooks(mbcno)
+            {
+                console.log(mbcno);
+                axios({
+                    url:"GetCategoryBooksServlet",
+                    params:
+                        {
+                            bcno:mbcno
+                        }
+                })
+                    .then((result) => {
+                        let data = result.data;
+                        console.log(data);
+                        this.bookUnits =data;
+
+                    }).catch((err) => {
+                    console.log("请求一个类型的书-出错了");
+                    console.log(err);
+                });
+            },
+            DelCartItem(mbno)
+            {
+                axios({
+                    url:"RemoveCartServlet",
+                    params:
+                        {
+                            bno:mbno
+                        }
+                })
+                    .then((result) => {
+                        let data = result.data;
+                        console.log(data);
+                        this.cartUnits =data;
+
+                    }).catch((err) => {
+                    console.log("请求购物车物品--出错了");
+                    console.log(err);
+                });
+
+            },
+            CloseCart()
+            {
+                this.cartVisable = false;
+                this.buyBtnVisable= false;
+            },
+            OpenCart()
+            {
+                this.cartVisable = true;
+                this.buyBtnVisable= true;
+            },
+            PutCart(mbno)
+            {
+                axios({
+                    url:"PutCartServlet",
+                    params:
+                        {
+                            bno:mbno
+                        }
+                })
+                    .then((result) => {
+                        let data = result.data;
+                        console.log(data);
+                        this.cartUnits =data;
+
+                    }).catch((err) => {
+                    console.log("请求添加到购物车--出错了");
+                    console.log(err);
+                });
+
+            },
+            Buy()
+            {
+                axios({
+                    url:"OrderServlet",
+                    method:'post',
+                    data:
+                        {
+                            buyUnits:this.cartUnits
+                        }
+                })
+                    .then((result) => {
+                        //TODO
+                    }).catch((err) => {
+                    console.log("请求提交订单--出错了");
+                    console.log(err);
+                });
+
+                alert("提交订单成功,共计"+this.totalOrderPrice+"元");
+            },
+            CloseNotice()
+            {
+                this.noticeVisable = false;
+            },
+            GetAllBooks()
+            {
+                axios({
+                    url:"ModifyBookServlet",
+                    method:'post',
+                    data:
+                        {
+                            type:'GET-ALL',
+                            data: {}
+                        }
+                })
+                    .then((result) => {
+                        let data = result.data;
+                        this.bookUnits = data;
+                    }).catch((err) => {
+                    console.log("获取所有书籍出错了");
+                    console.log(err);
+                });
+            }
+        },
+        watch: {
+            cartUnits(newcartUnits, oldcartUnits) {
+                console.log("购物车数据有变化,重新计算总价格");
+                this.totalOrderPrice = 0;
+                for(let i = 0; i < newcartUnits.length; i++)
+                {
+                    this.totalOrderPrice = this.totalOrderPrice + this.cartUnits[i].bprice;
+                }
+            }
+        }
+
+    });
+
+    bookshopapp.mount("#bookshopapp");
+</script>
+</body>
+
+</html>
